@@ -48,7 +48,10 @@ if (!customElements.get('product-splide-gallery')) {
         this.destroySliders();
 
         const isDesktop = this.desktopQuery.matches;
-        const hasMultiple = Number(this.dataset.mediaCount) > 1;
+        const mediaCount = Number(this.dataset.mediaCount);
+        const hasMultiple = mediaCount > 1;
+        // On desktop the vertical thumbnail arrows are only needed when there are more than 4 thumbnails.
+        const showThumbArrows = isDesktop ? mediaCount > 4 : true;
 
         this.main = new Splide(this.mainEl, {
           type: 'slide',
@@ -89,7 +92,7 @@ if (!customElements.get('product-splide-gallery')) {
           start,
           gap: '1rem',
           rewind: true,
-          arrows: true,
+          arrows: showThumbArrows,
           pagination: false,
           isNavigation: true,
           focus: 0,
