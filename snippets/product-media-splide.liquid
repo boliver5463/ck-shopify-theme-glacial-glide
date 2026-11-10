@@ -1,0 +1,121 @@
+{% comment %}
+  Renders the product media as two synced Splide carousels:
+  a main media carousel and a thumbnail navigation carousel.
+  Thumbnails sit vertically on the left on desktop and horizontally below on mobile.
+  Should be used with 'product-splide-gallery.js'.
+
+  Accepts:
+  - product: {Object} Product liquid object
+
+  Usage:
+  {% render 'product-media-splide', product: product %}
+{% endcomment %}
+
+{%- liquid
+  if section.settings.media_size == 'large'
+    assign media_width = 0.6
+  elsif section.settings.media_size == 'medium'
+    assign media_width = 0.5
+  else
+    assign media_width = 0.4
+  endif
+
+  assign start_index = 0
+  assign featured_media_id = product.selected_or_first_available_variant.featured_media.id
+  if featured_media_id
+    for media in product.media
+      if media.id == featured_media_id
+        assign start_index = forloop.index0
+        break
+      endif
+    endfor
+  endif
+-%}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide-core.min.css">
+{{ 'component-product-splide.css' | asset_url | stylesheet_tag }}
+<script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js" defer="defer"></script>
+<script src="{{ 'product-splide-gallery.js' | asset_url }}" defer="defer"></script>
+
+<product-splide-gallery
+  class="product-splide"
+  data-section="{{ section.id }}"
+  data-start-index="{{ start_index }}"
+  data-media-count="{{ product.media.size }}"
+  data-label-prev="{{ 'general.slider.previous_slide' | t | escape }}"
+  data-label-next="{{ 'general.slider.next_slide' | t | escape }}"
+>
+  <section
+    class="splide product-splide__main"
+    aria-label="{{ 'products.product.media.gallery_viewer' | t }}"
+    data-splide-main
+  >
+    <div class="splide__track">
+      <ul class="splide__list">
+        {%- for media in product.media -%}
+          <li
+            class="splide__slide product-splide__slide"
+            data-media-id="{{ media.id }}"
+          >
+            {%- liquid
+              assign lazy_load = true
+              if forloop.index0 == start_index
+                assign lazy_load = false
+              endif
+            -%}
+            {% render 'product-thumbnail',
+              media: media,
+              media_count: product.media.size,
+              position: forloop.index,
+              desktop_layout: 'stacked',
+              mobile_layout: 'hide',
+              loop: section.settings.enable_video_looping,
+              modal_id: section.id,
+              xr_button: true,
+              media_width: media_width,
+              media_fit: section.settings.media_fit,
+              constrain_to_viewport: section.settings.constrain_to_viewport,
+              lazy_load: lazy_load
+            %}
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  </section>
+
+  {%- if product.media.size > 1 -%}
+    <section
+      class="splide product-splide__thumbs"
+      aria-label="{{ 'products.product.media.gallery_viewer' | t }}"
+      data-splide-thumbs
+    >
+      <div class="splide__track">
+        <ul class="splide__list">
+          {%- for media in product.media -%}
+            <li class="splide__slide product-splide__thumb" data-media-id="{{ media.id }}">
+              {{
+                media.preview_image
+                | image_url: width: 240
+                | image_tag:
+                  class: 'product-splide__thumb-img',
+                  loading: 'lazy',
+                  sizes: '(min-width: 750px) 90px, 70px',
+                  widths: '90, 120, 180, 240',
+                  alt: media.alt
+              }}
+              {%- if media.media_type != 'image' -%}
+                <span class="product-splide__thumb-badge svg-wrapper" aria-hidden="true">
+                  {%- if media.media_type == 'model' -%}
+                    {{- 'icon-3d-model.svg' | inline_asset_content -}}
+                  {%- else -%}
+                    {{- 'icon-play.svg' | inline_asset_content -}}
+                  {%- endif -%}
+                </span>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    </section>
+  {%- endif -%}
+</product-splide-gallery>
